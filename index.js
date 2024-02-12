@@ -203,7 +203,7 @@ const getInputs = () => {
 }
 
 const getOutputs = () => {
-  const output = new midi.output();
+  const output = new midi.Output();
   const outputs = [];
   for (let i = 0; i < output.getPortCount(); i++) {
     var counter = 0;
