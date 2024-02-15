@@ -71,6 +71,7 @@ export declare class Input extends EventEmitter {
   on(evt: "activesense", handler: () => void): this;
   on(evt: "reset", handler: () => void): this;
   on(evt: "sysex", handler: (param: Sysex) => void): this;
+  on(evt: "message", handler: (param: Sysex) => void): this;
   close(): void;
   isPortOpen(): boolean;
 }
@@ -94,10 +95,17 @@ export declare class Output {
   send(evt: "stop"): void;
   send(evt: "activesense"): void;
   send(evt: "reset"): void;
-  send(evt: "sysex", param: Array<number>): void;
+  send(evt: "sysex", param: Sysex): void;
+  send(evt: "message", param: Sysex): void;
   close(): void;
   isPortOpen(): boolean;
 }
 
 export declare function getInputs(): string[];
 export declare function getOutputs(): string[];
+export declare function parseBytes(object): object;
+export declare function parseMessage(string, any): number[];
+export declare const INPUT_TYPES: object;
+export declare const INPUT_EXTENDED_TYPES: object;
+export declare const OUTPUT_TYPES: object;
+export declare const OUTPUT_EXTENDED_TYPES: object;
