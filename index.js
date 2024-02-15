@@ -32,13 +32,14 @@ const INPUT_EXTENDED_TYPES = {
 const OUTPUT_TYPES = swap(INPUT_TYPES);
 const OUTPUT_EXTENDED_TYPES = swap(INPUT_EXTENDED_TYPES);
 
-class Input extends EventEmitter {
+class Input extends EventEmitter { 
   constructor(name, virtual) {
     super();
     this._input = new midi.Input();
     this._input.ignoreTypes(false, false, false);
     this._pendingSysex = false;
     this._sysex = [];
+    this._smpte = [];
     this.name = name;
     this.inputPortNumberedNames = getInputs();
 
@@ -81,7 +82,7 @@ class Input extends EventEmitter {
       }
       if (proceed) {
         const data = parseBytes(bytes);
-        if ((data.type === 'sysex') && (bytes[bytes.length - 1] !== 0xf7)) {
+       if ((data.type === 'sysex') && (bytes[bytes.length - 1] !== 0xf7)) {
           this._sysex = [...bytes];
           this._pendingSysex = true;
         }
@@ -107,12 +108,13 @@ class Input extends EventEmitter {
   }
 
   parseMtc(data) {
+    const FRAME_RATES = [24, 25, 29.97, 30]
     const byteNumber = data.type;
-    const smpte = [];
     let value = data.value;
-    let smpteMessageCounter = 0;
-    let smpteType;
+    let smpteFrameRate;
 
+    this._smpte[byteNumber] = value;
+    
     if (byteNumber === 7) {
       const bits = [];
       for (let i = 3; i >= 0; i--) {
@@ -120,26 +122,23 @@ class Input extends EventEmitter {
         bits.push(bit);
       }
       value = bits[3];
-      smpteType = (bits[1] * 2) + bits[2];
-    }
-    smpte[byteNumber] = value;
-    if (smpteMessageCounter !== 7) {
-      smpteMessageCounter++;
-      return;
-    }
-    if (byteNumber === 7) {
+      smpteFrameRate = FRAME_RATES[(bits[1] * 2) + bits[2]];
+      this._smpte[byteNumber] = value;
+
+      let smpte = this._smpte;
+      this._smpte = [];
       const smpteFormatted =
         (smpte[7] * 16 + smpte[6]).toString().padStart(2, '0')
         + ':'
         + (smpte[5] * 16 + smpte[4]).toString().padStart(2, '0')
         + ':'
         + (smpte[3] * 16 + smpte[2]).toString().padStart(2, '0')
-        + ':'
+        + '.'
         + (smpte[1] * 16 + smpte[0]).toString().padStart(2, '0');
 
       this.emit('smpte', {
         smpte: smpteFormatted,
-        smpteType,
+        frameRate: smpteFrameRate,
       });
     }
   }
@@ -220,7 +219,6 @@ const getOutputs = () => {
 }
 
 const parseBytes = (bytes) => {
-console.log('parseBytes: bytes = ', bytes)
   const msg = {};
   let type = 'unknown';
 
@@ -274,7 +272,6 @@ console.log('parseBytes: bytes = ', bytes)
       break;
   }
 
-console.log('parseBytes: returning ', {type, msg})
   return {
     type,
     msg,
@@ -289,7 +286,6 @@ const parseMessage = (type, args) => {
     type = parsedMsg.type
     args = parsedMsg.msg
   }
-console.log('parseMessage: type = ', type, ', args = ', args)
   if (OUTPUT_TYPES[type]) {
     args.channel = args.channel || 0;
     bytes.push((OUTPUT_TYPES[type] << 4) + args.channel);
@@ -335,7 +331,6 @@ console.log('parseMessage: type = ', type, ', args = ', args)
     bytes.push(args.song);
   }
 
-console.log('parseMessage: returning ', bytes)
   return bytes;
 }
 

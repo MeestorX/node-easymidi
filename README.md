@@ -67,10 +67,10 @@ The following table describes the MIDI message types that are supported and the 
 |--------------------|--------------------|------------------|----------------|
 | noteon             | note [0-127]       | velocity [0-127] | channel [0-15] |
 | noteoff            | note [0-127]       | velocity [0-127] | channel [0-15] |
-| poly aftertouch    | note [0-127]       | velocity [0-127] | channel [0-15] |
+| aftertouch         | note [0-127]       | velocity [0-127] | channel [0-15] |
 | cc                 | controller [0-127] | value [0-127]    | channel [0-15] |
 | program            | number [0-127]     |                  | channel [0-15] |
-| channel aftertouch | pressure [0-127]   |                  | channel [0-15] |
+| channel pressure   | pressure [0-127]   |                  | channel [0-15] |
 | pitch              | value [0-16384]    |                  | channel [0-15] |
 | position           | value [0-16384]    |                  |                |
 | mtc                | type [0-7]         | value [0-15]     |                |
@@ -81,7 +81,13 @@ The following table describes the MIDI message types that are supported and the 
 | stop               |                    |                  |                |
 | activesense        |                    |                  |                |
 | reset              |                    |                  |                |
-| sysex              | bytes (variable length array) |             |                | 
+| sysex              | bytes [array bookended by 0xF0 and 0xF7] |             |                |
+
+NON-MIDI MESSAGES
+| Type               | Parameter          | Parameter        | Parameter      |
+|--------------------|--------------------|------------------|----------------|
+| message            | bytes [variable length byte array] | for receiving or sending any array of bytes             |                |
+| smpte              | smpte [hh:mm:ss.ff]         | frameRate [24 or 25 or 29.97 or 30]     |                |
 
 # Examples
 
@@ -90,6 +96,12 @@ Receive a noteon message:
 ```javascript
 input.on('noteon', function (params) {
   // params = {note: ..., velocity: ..., channel: ...}
+});
+```
+Receive an mtc message formatted to smpte timecode:
+```javascript
+input.on('smpte', function (params) {
+  // params = {smpte: hh:mm:ss.ff, frameRate: 24 | 25 | 29.97 | 30}
 });
 ```
 
@@ -114,7 +126,9 @@ input.on('clock', function () {
 Send a sysex message.  
 Throws an error if array does not start with 0xf0 (240) and end with 0xf7 (247).
 ```javascript
-output.send('sysex',[240, 126, 1, 6, 1, 247]);
+output.send('sysex', {
+  bytes: [240, 126, 1, 6, 1, 247]
+});
 ```
 
 See the [example programs](https://github.com/dinchak/node-easymidi/tree/master/examples) for more examples.

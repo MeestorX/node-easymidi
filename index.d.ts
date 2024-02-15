@@ -44,6 +44,11 @@ export interface Mtc {
   value: number;
 }
 
+export interface Smpte {
+  smpte: string;
+  frameRate: number;
+}
+
 export interface Select {
   song: number;
 }
@@ -63,6 +68,7 @@ export declare class Input extends EventEmitter {
   on(evt: "pitch", handler: (param: Pitch) => void): this;
   on(evt: "position", handler: (param: Position) => void): this;
   on(evt: "mtc", handler: (param: Mtc) => void): this;
+  on(evt: "smpte", handler: (param: Smpte) => void): this;
   on(evt: "select", handler: (param: Select) => void): this;
   on(evt: "clock", handler: () => void): this;
   on(evt: "start", handler: () => void): this;
