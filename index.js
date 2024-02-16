@@ -9,10 +9,10 @@ const swap = (obj) => Object.entries(obj).reduce((acc, [key, value]) => {
 const INPUT_TYPES = {
   0x08: 'noteoff',
   0x09: 'noteon',
-  0x0A: 'poly aftertouch',
+  0x0A: 'aftertouch',
   0x0B: 'cc',
   0x0C: 'program',
-  0x0D: 'channel aftertouch',
+  0x0D: 'channelpressure',
   0x0E: 'pitch',
 };
 const INPUT_EXTENDED_TYPES = {
@@ -115,7 +115,7 @@ class Input extends EventEmitter {
 
     this._smpte[byteNumber] = value;
     
-    if (byteNumber === 7) {
+    if ((byteNumber === 7) && (typeof this._smpte[0] === 'number')) {
       const bits = [];
       for (let i = 3; i >= 0; i--) {
         const bit = value & (1 << i) ? 1 : 0;
@@ -126,7 +126,6 @@ class Input extends EventEmitter {
       this._smpte[byteNumber] = value;
 
       let smpte = this._smpte;
-      this._smpte = [];
       const smpteFormatted =
         (smpte[7] * 16 + smpte[6]).toString().padStart(2, '0')
         + ':'
@@ -228,6 +227,7 @@ const parseBytes = (bytes) => {
     type = INPUT_TYPES[bytes[0] >> 4];
     msg.channel = bytes[0] & 0xF;
   }
+
   switch (type) {
     case 'noteoff':
     case 'noteon':
@@ -235,7 +235,7 @@ const parseBytes = (bytes) => {
       msg.velocity = bytes[2];
       break;
 
-    case 'poly aftertouch':
+    case 'aftertouch':
       msg.note = bytes[1];
       msg.pressure = bytes[2];
       break;
@@ -249,7 +249,7 @@ const parseBytes = (bytes) => {
       msg.number = bytes[1];
       break;
 
-    case 'channel aftertouch':
+    case 'channelpressure':
       msg.pressure = bytes[1];
       break;
 
@@ -290,47 +290,58 @@ const parseMessage = (type, args) => {
     args.channel = args.channel || 0;
     bytes.push((OUTPUT_TYPES[type] << 4) + args.channel);
   } else if (OUTPUT_EXTENDED_TYPES[type]) {
-    bytes.push(OUTPUT_EXTENDED_TYPES[type]);
+    bytes.push(OUTPUT_EXTENDED_TYPES[type] * 1); // Force it to be a number
   } else {
     throw new Error('Unknown midi message type: ' + type);
   }
 
-  if (type === 'noteoff' || type === 'noteon') {
-    bytes.push(args.note);
-    bytes.push(args.velocity);
-  }
-  if (type === 'poly aftertouch') {
-    bytes.push(args.note);
-    bytes.push(args.pressure);
-  }
-  if (type === 'cc') {
-    bytes.push(args.controller);
-    bytes.push(args.value);
-  }
-  if (type === 'program') {
-    bytes.push(args.number);
-  }
-  if (type === 'channel aftertouch') {
-    bytes.push(args.pressure);
-  }
-  if (type === 'pitch' || type === 'position') {
-    bytes.push(args.value & 0x7F); // lsb
-    bytes.push((args.value & 0x3F80) >> 7); // msb
-  }
-  if (type === 'sysex') {
-    // sysex commands should start with 0xf0 and end with 0xf7. Throw an error if it doesn't.
-    if (args.bytes.length <= 3 || args.bytes[0] !== 0xf0 || args.bytes[args.bytes.length - 1] !== 0xf7) { //
-      throw new Error("sysex commands should be an array that starts with 0xf0 and end with 0xf7");
-    }
-    args.bytes.slice(1).forEach((arg) => bytes.push(arg)); // 0xf0 was already added at the beginning of parseMessage.
-  }  
-  if (type === 'mtc') {
-    bytes.push((args.type << 4) + args.value);
-  }
-  if (type === 'select') {
-    bytes.push(args.song);
-  }
+  switch (type) {
+    case 'noteoff':
+    case 'noteon':
+      bytes.push(args.note);
+      bytes.push(args.velocity);
+      break;
 
+    case 'aftertouch':
+      bytes.push(args.note);
+      bytes.push(args.pressure);
+      break;
+
+    case 'cc':
+      bytes.push(args.controller);
+      bytes.push(args.value);
+      break;
+
+    case 'program':
+      bytes.push(args.number);
+      break;
+
+    case 'channelpressure':
+      bytes.push(args.pressure);
+      break;
+
+    case 'pitch':
+    case 'position':
+      bytes.push(args.value & 0x7F); // lsb
+      bytes.push((args.value & 0x3F80) >> 7); // msb
+      break;
+
+    case 'sysex':
+      // sysex commands should start with 0xf0 and end with 0xf7. Throw an error if it doesn't.
+      if (args.bytes.length <= 3 || args.bytes[0] !== 0xf0 || args.bytes[args.bytes.length - 1] !== 0xf7) {
+        throw new Error("sysex commands should be an array of length > 3 that starts with 0xf0 and end with 0xf7");
+      }
+      args.bytes.slice(1).forEach((arg) => bytes.push(arg)); // 0xf0 was already added at the beginning of parseMessage.
+      break;
+
+    case 'mtc':
+      bytes.push((args.type << 4) + args.value);
+      break;
+
+    case 'select':
+      bytes.push(args.song);
+      break;
+  }
   return bytes;
 }
 

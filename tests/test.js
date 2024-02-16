@@ -63,13 +63,13 @@ it('receives a program message', (done) => {
   });
 });
 
-it('receives a channel aftertouch message', (done) => {
-  input.once('channel aftertouch', (data) => {
+it('receives a channel pressure message', (done) => {
+  input.once('channelpressure', (data) => {
     expect(data.pressure).to.equal(100);
     expect(data.channel).to.equal(10);
     done();
   });
-  output.send('channel aftertouch', {
+  output.send('channelpressure', {
     pressure: 100,
     channel: 10
   });

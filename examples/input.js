@@ -8,13 +8,13 @@ input.on('noteoff', msg => console.log('noteoff', msg.note, msg.velocity, msg.ch
 
 input.on('noteon', msg => console.log('noteon', msg.note, msg.velocity, msg.channel));
 
-input.on('poly aftertouch', msg => console.log('poly aftertouch', msg.note, msg.pressure, msg.channel));
+input.on('aftertouch', msg => console.log('aftertouch', msg.note, msg.pressure, msg.channel));
 
 input.on('cc', msg => console.log('cc', msg.controller, msg.value, msg.channel));
 
 input.on('program', msg => console.log('program', msg.number, msg.channel));
 
-input.on('channel aftertouch', msg => console.log('channel aftertouch', msg.pressure, msg.channel));
+input.on('channelpressure', msg => console.log('channel pressure', msg.pressure, msg.channel));
 
 input.on('pitch', msg => console.log('pitch', msg.value, msg.channel));
 

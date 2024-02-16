@@ -22,13 +22,13 @@ output.send('cc', {
   channel: 0
 });
 
-output.send('poly aftertouch', {
+output.send('aftertouch', {
   note: 64,
   pressure: 127,
   channel: 0
 });
 
-output.send('channel aftertouch', {
+output.send('channelpressure', {
   pressure: 127,
   channel: 0
 });
